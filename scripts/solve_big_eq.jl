@@ -1,5 +1,5 @@
 using DifferentialEquations, Revise
-using 
+using RecursiveArrayTools
 include("big_eq2.jl")
 
 # Geometric parameters %%%%%%%%%%%%%%%%%%%%%%%%%
@@ -57,18 +57,9 @@ fa = xi*sigeq^2/(sigeq^2+ Sig0^2);       # Active stress
 press0 = 2*(la+fa)/R0;                   # Pressure
 # init = guessf(uc,ka,R0,ri,sigeq)
 # init = 6
-init =[uc*pi,
-pi,
-ri.+ R0*sin.(uc*pi),
-R0*(cos.(uc*pi)),
-ka/2*ri*(0.0.-1/R0^2),
-0,
-0,
-0,
-sigeq,
-0,
-2/3*R0^3*(2 .+ cos.(uc*pi)).*sin.(uc*pi/2).^4,
-R0*pi]
+# init =[uc*pi,pi,ri.+ R0*sin.(uc*pi),R0*(cos.(uc*pi)),ka/2*ri*(0.0.-1/R0^2),0,0,0,sigeq,0,2/3*R0^3*(2 .+ cos.(uc*pi)).*sin.(uc*pi/2).^4,R0*pi]
+init = guessf(uc,ka,R0,ri,sigeq)
+init = ArrayPartition(init...)
 # My understanding is that this doesn't actually solve anything, just
 # puts things in the right structure to be solved 
 # sol = bvpinit(uc,yinit,[pi*R0,press0]);
@@ -87,8 +78,8 @@ end
 rr = 0.2*sigeq/maximum(abs.(pert))
 pert .= pert.*rr                 # This is to ensure that the maximum perturbation is no greater than 0.2*sigeq        
 dpert .= dpert.*rr
-init[9] = init[9,:] .+ pert # Add peturbation to concentration
-init[10] = init[10,:] .+ dpert # Add derivative perturbation to concentration derivative
+init.x[9] .= init.x[9] .+ pert # Add peturbation to concentration
+init.x[10] .= init.x[10] .+ dpert # Add derivative perturbation to concentration derivative
 
 
 #################################################################
@@ -98,4 +89,4 @@ sols = []
 bvp = BVProblem(shapef!, twobcf!, init, (0,1))
                                         # ^ this was uc
 
-sol = solve(bvp, Tsit5(), dt=dt)                                        
+sol = solve(bvp, Vern8(), dt=dt)                                        

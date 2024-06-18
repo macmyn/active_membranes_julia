@@ -7,18 +7,18 @@ function shapef!(dy, y, p, t)
 # Read out current field values
 # fn0 = para(2); # Pressure
 #dy = zeros(12,1);    # a column vector
-p = y[1];    # psi
-dp = y[2];
-r = y[3];
-z = y[4];
-al = y[5];
-be = y[6];
-vu = y[7];
-dvu = y[8];
-sig = y[9];
-dsig = y[10];
+p = y.x[1];    # psi
+dp = y.x[2];
+r = y.x[3];
+z = y.x[4];
+al = y.x[5];
+be = y.x[6];
+vu = y.x[7];
+dvu = y.x[8];
+sig = y.x[9];
+dsig = y.x[10];
 #vol = y(11);
-h = y[12];
+h = y.x[12];
 
 if Vext != 0
     # Constraining forces in direction r and z
@@ -99,18 +99,18 @@ function guessf(u,ka,R0,ri,sigeq)
   # h = y(12);
   # ka = 1;
   #ka = 1;
-  g = [u*pi;
-       ones(size(u))*pi;
-       ri.+ R0*sin.(u*pi);
-       R0*(cos.(u*pi));
-       ones(size(u))*ka/2*ri*(0.0.-1/R0^2);
-       ones(size(u))*0;
-       ones(size(u))*0;
-       ones(size(u))*0;
-       ones(size(u))*sigeq;
-       ones(size(u))*0;
-       2/3*R0^3*(2 .+ cos.(u*pi)).*sin.(u*pi/2).^4;
-       ones(size(u))*R0*pi]
+  g = [u*pi,
+       ones(size(u))*pi,
+       ri.+ R0*sin.(u*pi),
+       R0*(cos.(u*pi)),
+       ka/2*ri*(0.0.-1/R0^2),
+       0,
+       ones(size(u))*0,
+       ones(size(u))*0,
+       ones(size(u))*sigeq,
+       ones(size(u))*0,
+       2/3*R0^3*(2 .+ cos.(u*pi)).*sin.(u*pi/2).^4,
+       R0*pi]
   return g
 end
 
