@@ -1,4 +1,4 @@
-using DifferentialEquations, Revise
+using DifferentialEquations, Revise, Interpolations
 using RecursiveArrayTools
 include("big_eq2.jl")
 
@@ -47,7 +47,7 @@ date = "15-Jan-2024";
 ### (2) By-hand initial geometry and concentration fields
 ### Option 1: Spherical shape, homogeneous concentration
 n_init = 101; # Number of grid points along initial circle
-uc = LinRange(0,1,n_init);
+uc = Array(LinRange(0,1,n_init));
 
 # Initial guess function for spherical surface
 ### Defined in functions file ###
@@ -82,11 +82,28 @@ init.x[9] .= init.x[9] .+ pert # Add peturbation to concentration
 init.x[10] .= init.x[10] .+ dpert # Add derivative perturbation to concentration derivative
 
 
+uc0 = uc
+p0c = init.x[1]
+r0c = init.x[3]
+z0c = init.x[4]
+h0c = init.x[12]
+
+
+sig0c = init.x[9]
+
+params = Dict(:press0 => press0,
+              :uc0 => uc0,
+              :p0c => p0c,
+              :r0c => r0c,
+              :z0c => z0c,
+              :h0c => h0c,
+              :sig0c => sig0c)
+
 #################################################################
 
 sols = []
 
-bvp = BVProblem(shapef!, twobcf!, init, (0,1))
+bvp = BVProblem(shapef!, twobcf!, init, (0,1), params)
                                         # ^ this was uc
 
 sol = solve(bvp, Vern8(), dt=dt)                                        
