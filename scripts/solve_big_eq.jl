@@ -99,11 +99,15 @@ params = Dict(:press0 => press0,
               :h0c => h0c,
               :sig0c => sig0c)
 
+params = NamedTuple(p for p in params)
+
+
 #################################################################
 
 sols = []
 
 bvp = BVProblem(shapef!, twobcf!, init, (0,1), params)
                                         # ^ this was uc
-
-sol = solve(bvp, Vern8(), dt=dt)                                        
+println("bvp defined")
+sol = solve(bvp, Vern8(), dt=dt)
+println("finished")                                    

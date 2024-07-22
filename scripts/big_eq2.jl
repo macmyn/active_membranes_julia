@@ -65,8 +65,8 @@ sig0 = sig0itp.(u)  # Interpolate at the points in u;
 c0 = 0;
 
 ### COPY HERE RIGHT-HAND SIDE EQUATIONS PRODUCED BY MATHEMATICA SCRIPT ### 
-println(dy)
-println("DP", dp)
+# println(dy)
+# println("DP", dp)
 
 dy.x[1].=dp;
 
@@ -126,8 +126,8 @@ function guessf(u,ka,R0,ri,sigeq)
 end
 
 # function twobcf!(ya,yb,para,ka,sp,ri,vol0,Ga2)
+# function twobcf!(res, y, p, x)
 function twobcf!(res, y, p, x)
-
   # psi = y(1);
   # dpsi = y(2);
   # r = y(3);
@@ -141,32 +141,52 @@ function twobcf!(res, y, p, x)
   # vol = y(11);
   # h = y(12);
   # ka = 1;
-  
   c0 = 0;
-  h = para(1);
-  alpha_i = ka/2*ri*(c0^2-ya(2)^2/h^2);
+#   h = para(1);
+  h = y[12]
+#   println(h)
+#   println(size(y))
+  alpha_i = ka/2*ri*(c0^2-y.x[2][begin]^2/h^2);
   
   if Ga2 == 0 # No tangential friction
-      beta_z_bc0 = ya(6) .+ yb(6); # beta(0) .+ beta(1) = 0
-      beta_z_bc1 = ya(4) .+ yb(4); # z(0) .+ z(1) = 0
+    #   beta_z_bc0 = ya(6) .+ yb(6); # beta(0) .+ beta(1) = 0
+    #   beta_z_bc1 = ya(4) .+ yb(4); # z(0) .+ z(1) = 0
+    beta_z_bc0 = y.x[6][begin] .+ y.x[6][end]
+    beta_z_bc1 = y.x[4][begin] .+ y.x[4][end]
   else
-      beta_z_bc0 = ya(6); # beta(1) = 0
-      beta_z_bc1 = yb(6); # beta(1) = 0
+    #   beta_z_bc0 = ya(6); # beta(1) = 0
+    #   beta_z_bc1 = yb(6); # beta(1) = 0
+    beta_z_bc0 = y.x[6][begin]
+    beta_z_bc1 = y.x[6][end]
   end
-  println("got here")
-  res = [ ya(1)-0;   # psi(0) = 0;
-          ya(3)-ri;      # r(0) = ri;
+  res = [ y.x[1][begin]-0;   # psi(0) = 0;
+          y.x[3][begin]-ri;      # r(0) = ri;
           beta_z_bc0;       
-          ya(5)-alpha_i; # alpha(0)=ka/2*(c0^2-dpsi^2/h^2)...
+          y.x[5][begin]-alpha_i; # alpha(0)=ka/2*(c0^2-dpsi^2/h^2)...
           beta_z_bc1;    # 
-          ya(7)-0;       # vu(0) = 0;
-          ya(10)-0;      # sigma'(0)=0;
-          ya(11)-0;      # vol(0) = 0;
-          ya(12)-h;      # h(0) = h0;
-          yb(1)-pi;      # psi(1) = pi;
-          yb(3)-ri;      # r(1) = ri;
-          yb(7)-0;       # vu(1) = 0;
-          yb(10)-0;      # sigma'(1) = 0;
-          yb(11)-vol0];     # vol(1) = vol0;
+          y.x[7][begin]-0;       # vu(0) = 0;
+          y.x[10][begin]-0;      # sigma'(0)=0;
+          y.x[11][begin]-0;      # vol(0) = 0;
+          y.x[12][begin]-h;      # h(0) = h0;
+          y.x[1][end]-pi;      # psi(1) = pi;
+          y.x[3][end]-ri;      # r(1) = ri;
+          y.x[7][end]-0;       # vu(1) = 0;
+          y.x[10][end]-0;      # sigma'(1) = 0;
+          y.x[11][end]-vol0];     # vol(1) = vol0;
+    # res[1] = ya[1]-0;   # psi(0) = 0;
+    # res[2] = ya[3]-ri;      # r(0) = ri;
+    # res[3] = beta_z_bc0;       
+    # res[4] = ya[5]-alpha_i; # alpha(0)=ka/2*(c0^2-dpsi^2/h^2)...
+    # res[5] = beta_z_bc1;    # 
+    # res[6] = ya[7]-0;       # vu(0) = 0;
+    # res[7] = ya[10]-0;      # sigma'(0)=0;
+    # res[8] = ya[11]-0;      # vol(0) = 0;
+    # res[9] = ya[12]-h;      # h(0) = h0;
+    # res[10] = yb[1]-pi;      # psi(1) = pi;
+    # res[11] = yb[3]-ri;      # r(1) = ri;
+    # res[12] = yb[7]-0;       # vu(1) = 0;
+    # res[13] = yb[10]-0;      # sigma'(1) = 0;
+    # res[14] = yb[11]-vol0;     # vol(1) = vol0;
+
 
 end
