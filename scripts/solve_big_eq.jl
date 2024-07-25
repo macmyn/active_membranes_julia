@@ -1,12 +1,15 @@
-using DifferentialEquations, Revise, Interpolations
-using RecursiveArrayTools
+using DifferentialEquations, Revise, Interpolations 
+using BenchmarkTools, ProfileView
+# using RecursiveArrayTools
+using StaticArrays
+using Infiltrator
 include("big_eq2.jl")
 
 # Geometric parameters %%%%%%%%%%%%%%%%%%%%%%%%%
 ri = 1e-3;                     # minimum pole radius to avoid singularity 
 
 # Geometry of the cell
-R0 = 3;                        # radius of the undeformed spherical cell
+R0 = 1;                        # radius of the undeformed spherical cell
 vol0 = 2/3*R0^3;               # Volume of the cell
 
 # Geometry of the constraining potential
@@ -21,17 +24,17 @@ Vext = 0;        #  V = Vext*exp(sp*d), where d = z^2/a^2 + r^2/b^2 - 1
 mu = 1;                        # viscosity mu = etas
 mub = 0;                       # viscosity mub = (etab-etas)/2
 Ga1 = 0;                       # normal friction coefficient
-Ga2 = 0.1;                    # tangential friction coefficient
+Ga2 = 0.0;                    # tangential friction coefficient
 
 #%%%%%%%%% Motor dynamics and active stress %%%%%%%%%%%
 sigeq = 1;                     # Turnover the motors is described by
-ksig = 1;                      # Source term -ksig*(sigma-sigeq)
-xi = 20;                       # Active stress ta = xi*sigma^2/(sigma^2+Sig0^2)
+ksig = 0;                      # Source term -ksig*(sigma-sigeq)
+xi = 15;                       # Active stress ta = xi*sigma^2/(sigma^2+Sig0^2)
 Sig0 = 1;                      # Hill-function parameter
-Di = 1;                        # Diffusion constant
+Di = 2.7;                        # Diffusion constant
 
 #%%%%%%%% Elastic properties of the surface %%%%%%%%%%%
-ka = 0.1;                      # Bending rigidity (has to be > 0)
+ka = 0.01;                      # Bending rigidity (has to be > 0)
 la = 1;                        # Passive membrane tension
 
 #%%%%%%%% bvp5c parameters %%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -59,37 +62,39 @@ press0 = 2*(la+fa)/R0;                   # Pressure
 # init = 6
 # init =[uc*pi,pi,ri.+ R0*sin.(uc*pi),R0*(cos.(uc*pi)),ka/2*ri*(0.0.-1/R0^2),0,0,0,sigeq,0,2/3*R0^3*(2 .+ cos.(uc*pi)).*sin.(uc*pi/2).^4,R0*pi]
 init = guessf(uc,ka,R0,ri,sigeq)
-init = ArrayPartition(init...)
+# init = ArrayPartition(init...)
+init = MMatrix{101,12}(init)
+
 # My understanding is that this doesn't actually solve anything, just
 # puts things in the right structure to be solved 
 # sol = bvpinit(uc,yinit,[pi*R0,press0]);
 #################################################################
 
 # Apply small random perturbations to the motor concentration
-ran = 0.2*rand(1,10).-0.1;
-pert = zeros(size(uc))
-dpert = zeros(size(uc))
+# ran = 0.2*rand(1,10).-0.1;
+# pert = zeros(size(uc))
+# dpert = zeros(size(uc))
 
-# This global is currently a workaround because we're in the global scope from the REPL
-for n in 1:10
-    global pert .+= ran[n]*cos.(n*uc*pi)
-    global dpert .+= - ran[n]*n*pi*sin.(n*uc*pi)
-end
-rr = 0.2*sigeq/maximum(abs.(pert))
-pert .= pert.*rr                 # This is to ensure that the maximum perturbation is no greater than 0.2*sigeq        
-dpert .= dpert.*rr
-init.x[9] .= init.x[9] .+ pert # Add peturbation to concentration
-init.x[10] .= init.x[10] .+ dpert # Add derivative perturbation to concentration derivative
+# # This global is currently a workaround because we're in the global scope from the REPL
+# for n in 1:10
+#     global pert .+= ran[n]*cos.(n*uc*pi)
+#     global dpert .+= - ran[n]*n*pi*sin.(n*uc*pi)
+# end
+# rr = 0.2*sigeq/maximum(abs.(pert))
+# pert .= pert.*rr                 # This is to ensure that the maximum perturbation is no greater than 0.2*sigeq        
+# dpert .= dpert.*rr
+# init[:,9] .= init[:,9] .+ pert # Add peturbation to concentration
+# init[:,10] .= init[:,10] .+ dpert # Add derivative perturbation to concentration derivative
 
 
 uc0 = uc
-p0c = init.x[1]
-r0c = init.x[3]
-z0c = init.x[4]
-h0c = init.x[12]
+p0c = init[:,1]
+r0c = init[:,3]
+z0c = init[:,4]
+h0c = init[:,12]
 
 
-sig0c = init.x[9]
+sig0c = init[:,9]
 
 params = Dict(:press0 => press0,
               :uc0 => uc0,
@@ -105,9 +110,13 @@ params = NamedTuple(p for p in params)
 #################################################################
 
 sols = []
-
-bvp = BVProblem(shapef!, twobcf!, init, (0,1), params)
+# @infiltrate
+bvp = BVProblem(shapef, twobcf, init, (0,1), params)
                                         # ^ this was uc
 println("bvp defined")
-sol = solve(bvp, Vern8(), dt=dt)
+@btime res = shapef(init, params, uc0)
+# @time _ = shapef(init,params,uc0)
+# sol = solve(bvp, Vern8(), saveat=uc0, dt=dt)
+
+# ProfileView.@profview shapef(init,params,uc0)
 println("finished")                                    
