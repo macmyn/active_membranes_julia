@@ -3,6 +3,8 @@ using Revise
 function shapef!(dy, y, params, u)
 
 # FUNCTION SETS UP RIGHT-HAND-SIDE EQUATIONS OF ODE SYSTEM SOLVED BY bvp5c
+# @infiltrate
+# y = y[1]  # for some reason y (ArrayPartiion) is being passed as Vecor(ArrayPartition) i.e. [y]
 
 # Read out current field values
 # fn0 = para(2); # Pressure
@@ -46,6 +48,7 @@ p0c = params[:p0c]
 z0c = params[:z0c]
 h0c = params[:h0c]
 sig0c = params[:sig0c]
+dt = params[:dt]
 
 # Interpolate relevant fields of previous time point solution on points u 
 # requested by bvp5c solver in current step (needed to compute Euler 
@@ -67,6 +70,7 @@ c0 = 0;
 ### COPY HERE RIGHT-HAND SIDE EQUATIONS PRODUCED BY MATHEMATICA SCRIPT ### 
 # println(dy)
 # println("DP", dp)
+@infiltrate
 
 dy.x[1].=dp;
 
@@ -143,10 +147,13 @@ function twobcf!(res, y, p, x)
   # ka = 1;
   c0 = 0;
 #   h = para(1);
-  h = y[12]
-#   println(h)
-#   println(size(y))
-  alpha_i = ka/2*ri*(c0^2-y.x[2][begin]^2/h^2);
+  # h = y[12]
+  h = p[:h0c]
+  y = y[1]  # for some reason, y is being passed as [y]??
+  # @infiltrate
+
+  @assert allequal(h)
+  alpha_i = ka/2*ri*(c0^2-y.x[2][begin]^2/h[1].^2);
   
   if Ga2 == 0 # No tangential friction
     #   beta_z_bc0 = ya(6) .+ yb(6); # beta(0) .+ beta(1) = 0
@@ -159,6 +166,9 @@ function twobcf!(res, y, p, x)
     beta_z_bc0 = y.x[6][begin]
     beta_z_bc1 = y.x[6][end]
   end
+
+  # @infiltrate
+
   res = [ y.x[1][begin]-0;   # psi(0) = 0;
           y.x[3][begin]-ri;      # r(0) = ri;
           beta_z_bc0;       
@@ -167,7 +177,7 @@ function twobcf!(res, y, p, x)
           y.x[7][begin]-0;       # vu(0) = 0;
           y.x[10][begin]-0;      # sigma'(0)=0;
           y.x[11][begin]-0;      # vol(0) = 0;
-          y.x[12][begin]-h;      # h(0) = h0;
+          y.x[12][begin]-h[1];      # h(0) = h0;
           y.x[1][end]-pi;      # psi(1) = pi;
           y.x[3][end]-ri;      # r(1) = ri;
           y.x[7][end]-0;       # vu(1) = 0;

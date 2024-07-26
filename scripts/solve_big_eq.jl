@@ -1,5 +1,7 @@
 using DifferentialEquations, Revise, Interpolations
+using BoundaryValueDiffEq
 using BenchmarkTools
+using Infiltrator
 using RecursiveArrayTools
 include("big_eq2.jl")
 
@@ -67,20 +69,20 @@ init = ArrayPartition(init...)
 #################################################################
 
 # Apply small random perturbations to the motor concentration
-# ran = 0.2*rand(1,10).-0.1;
-# pert = zeros(size(uc))
-# dpert = zeros(size(uc))
+ran = 0.2*rand(1,10).-0.1;
+pert = zeros(size(uc))
+dpert = zeros(size(uc))
 
 # This global is currently a workaround because we're in the global scope from the REPL
-# for n in 1:10
-#     global pert .+= ran[n]*cos.(n*uc*pi)
-#     global dpert .+= - ran[n]*n*pi*sin.(n*uc*pi)
-# end
-# rr = 0.2*sigeq/maximum(abs.(pert))
-# pert .= pert.*rr                 # This is to ensure that the maximum perturbation is no greater than 0.2*sigeq        
-# dpert .= dpert.*rr
-# init.x[9] .= init.x[9] .+ pert # Add peturbation to concentration
-# init.x[10] .= init.x[10] .+ dpert # Add derivative perturbation to concentration derivative
+for n in 1:10
+    global pert .+= ran[n]*cos.(n*uc*pi)
+    global dpert .+= - ran[n]*n*pi*sin.(n*uc*pi)
+end
+rr = 0.2*sigeq/maximum(abs.(pert))
+pert .= pert.*rr                 # This is to ensure that the maximum perturbation is no greater than 0.2*sigeq        
+dpert .= dpert.*rr
+init.x[9] .= init.x[9] .+ pert # Add peturbation to concentration
+init.x[10] .= init.x[10] .+ dpert # Add derivative perturbation to concentration derivative
 
 
 uc0 = uc
@@ -98,7 +100,8 @@ params = Dict(:press0 => press0,
               :r0c => r0c,
               :z0c => z0c,
               :h0c => h0c,
-              :sig0c => sig0c)
+              :sig0c => sig0c,
+              :dt => dt)
 
 params = NamedTuple(p for p in params)
 
@@ -110,7 +113,7 @@ sols = []
 bvp = BVProblem(shapef!, twobcf!, init, (0,1), params)
                                         # ^ this was uc
 println("bvp defined")
-# sol = solve(bvp, Vern8(), dt=dt)
-dy = similar(init)
-@btime shapef!(dy, init, params, uc0)
+sol = solve(bvp, MIRK4(), dt=dt, adaptive=false)
+# dy = similar(init)
+# @btime shapef!(dy, init, params, uc0)
 println("finished")                                    
