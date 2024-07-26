@@ -1,4 +1,5 @@
 using DifferentialEquations, Revise, Interpolations
+using StaticArrays
 using BoundaryValueDiffEq
 using BenchmarkTools
 using Infiltrator
@@ -34,7 +35,7 @@ Sig0 = 1;                      # Hill-function parameter
 Di = 2.7;                        # Diffusion constant
 
 #%%%%%%%% Elastic properties of the surface %%%%%%%%%%%
-ka = 0.1;                      # Bending rigidity (has to be > 0)
+ka = 0.01;                      # Bending rigidity (has to be > 0)
 la = 1;                        # Passive membrane tension
 
 #%%%%%%%% bvp5c parameters %%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -62,7 +63,9 @@ press0 = 2*(la+fa)/R0;                   # Pressure
 # init = 6
 # init =[uc*pi,pi,ri.+ R0*sin.(uc*pi),R0*(cos.(uc*pi)),ka/2*ri*(0.0.-1/R0^2),0,0,0,sigeq,0,2/3*R0^3*(2 .+ cos.(uc*pi)).*sin.(uc*pi/2).^4,R0*pi]
 init = guessf(uc,ka,R0,ri,sigeq)
-init = ArrayPartition(init...)
+init = stack(init)
+init = MArray{Tuple{101,12}}(init)
+# init = ArrayPartition(init...)
 # My understanding is that this doesn't actually solve anything, just
 # puts things in the right structure to be solved 
 # sol = bvpinit(uc,yinit,[pi*R0,press0]);
@@ -81,18 +84,19 @@ end
 rr = 0.2*sigeq/maximum(abs.(pert))
 pert .= pert.*rr                 # This is to ensure that the maximum perturbation is no greater than 0.2*sigeq        
 dpert .= dpert.*rr
-init.x[9] .= init.x[9] .+ pert # Add peturbation to concentration
-init.x[10] .= init.x[10] .+ dpert # Add derivative perturbation to concentration derivative
+# @infiltrate
+init[:,9] .= init[:,9] .+ pert # Add peturbation to concentration
+init[:,10] .= init[:,10] .+ dpert # Add derivative perturbation to concentration derivative
 
-
+# @infiltrate
 uc0 = uc
-p0c = init.x[1]
-r0c = init.x[3]
-z0c = init.x[4]
-h0c = init.x[12]
+p0c = init[:,1]
+r0c = init[:,3]
+z0c = init[:,4]
+h0c = init[:,12]
 
 
-sig0c = init.x[9]
+sig0c = init[:,9]
 
 params = Dict(:press0 => press0,
               :uc0 => uc0,
@@ -107,12 +111,13 @@ params = NamedTuple(p for p in params)
 
 
 #################################################################
-
+# @infiltrate
 sols = []
 
 bvp = BVProblem(shapef!, twobcf!, init, (0,1), params)
                                         # ^ this was uc
 println("bvp defined")
+# sol = solve(bvp, Shooting(Vern8()), dt=dt)
 sol = solve(bvp, MIRK4(), dt=dt, adaptive=false)
 # dy = similar(init)
 # @btime shapef!(dy, init, params, uc0)
