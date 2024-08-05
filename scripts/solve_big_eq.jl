@@ -331,7 +331,7 @@ params = NamedTuple(p for p in params)
 # @infiltrate
 sols = []
 
-bvp = BVProblem(shapef!, twobcf!, guess_init, (0,1), params)
+bvp = BVProblem(shapef!, twobcf!, guess_init[1,:], (0,1), params)
                                         # ^ this was uc
 # @infiltrate
 # bvp = TwoPointBVProblem(shapef!, (bc1!,bc2!), guess_init, (0,1), params; bcresid_prototype = (zeros(9), zeros(5)))
