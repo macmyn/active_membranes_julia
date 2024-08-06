@@ -44,19 +44,39 @@ const la = 1;                        # Passive membrane tension
 #%%%%%%%% bvp5c parameters %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 RTol = 1e-3;              # relative tolerence 
 Nmax = 50000;             # maximum iteration steps
-dt = 0.01;                # simulation time step
+dt = 0.005;                # simulation time step
 T = 6;                    # total simulation time
+const n_init = 201; # Number of grid points along initial circle
+const uc = Array(LinRange(0,1,n_init));
 date = "15-Jan-2024";
 
 apply_pert = true
+
+# Apply small random perturbations to the motor concentration
+ran = 0.2*rand(1,10).-0.1;
+pert = zeros(size(uc))
+dpert = zeros(size(uc))
+
+# This global is currently a workaround because we're in the global scope from the REPL
+for n in 1:10
+    pert .+= ran[n]*cos.(n*uc*pi)
+    dpert .+= - ran[n]*n*pi*sin.(n*uc*pi)
+end
+rr = 0.2*sigeq/maximum(abs.(pert))
+pert .= pert.*rr
+                 # This is to ensure that the maximum perturbation is no greater than 0.2*sigeq        
+dpert .= dpert.*rr
+
+const global pert_fn = interpolate((uc,), pert, Gridded(Linear()))
+const global dpert_fn = interpolate((uc,), dpert, Gridded(Linear()))
+
 
 function main()
 
 
 ### (2) By-hand initial geometry and concentration fields
 ### Option 1: Spherical shape, homogeneous concentration
-n_init = 101; # Number of grid points along initial circle
-uc = Array(LinRange(0,1,n_init));
+
 
 # Initial guess function for spherical surface
 ### Defined in functions file ###
@@ -76,24 +96,12 @@ guess_init_single = guessfsingle(uc,ka,R0,ri,sigeq)
 # sol = bvpinit(uc,yinit,[pi*R0,press0]);
 #################################################################
 
-# Apply small random perturbations to the motor concentration
-ran = 0.2*rand(1,10).-0.1;
-pert = zeros(size(uc))
-dpert = zeros(size(uc))
 
-# This global is currently a workaround because we're in the global scope from the REPL
-for n in 1:10
-    pert .+= ran[n]*cos.(n*uc*pi)
-    dpert .+= - ran[n]*n*pi*sin.(n*uc*pi)
-end
-rr = 0.2*sigeq/maximum(abs.(pert))
-pert .= pert.*rr
-                 # This is to ensure that the maximum perturbation is no greater than 0.2*sigeq        
-dpert .= dpert.*rr
+
 # @infiltrate
-guess_init[:,9] .= guess_init[:,9] .+ pert # Add peturbation to concentration
-guess_init[:,10] .= guess_init[:,10] .+ dpert # Add derivative perturbation to concentration derivative
-save_object("solve_big_eq_guess_init.jld2",guess_init)
+# guess_init[:,9] .= guess_init[:,9] .+ pert # Add peturbation to concentration
+# guess_init[:,10] .= guess_init[:,10] .+ dpert # Add derivative perturbation to concentration derivative
+# save_object("solve_big_eq_guess_init.jld2",guess_init)
 uc0 = uc
 p0c = guess_init[:,1]
 r0c = guess_init[:,3]
@@ -151,7 +159,7 @@ println("bvp defined")
 # shapef!(dy, guess_init, params, uc0)
 # println("run shapef! once")
 println("solving...")
-sol = solve(bvp, MIRK4(), dt=dt, adaptive=false)#,abstol=1e-10,reltol=1e-10)
+sol = solve(bvp, MIRK4(), dt=dt, adaptive=false,abstol=1e-10,reltol=1e-10)
 # sol = solve(bvp, Shooting(AutoTsit5(Rosenbrock23())),dt=dt,adaptive=false)
 # sol = solve(bvp, Shooting(Vern8()), dt=dt, adaptive=false)
 @infiltrate

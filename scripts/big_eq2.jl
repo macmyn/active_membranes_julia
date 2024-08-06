@@ -331,31 +331,33 @@ function initialGuess(p,t)
   apply_pert = p[:apply_pert]  # bool
 
 
-  if apply_pert
-    ran = 0.2*rand(1,10).-0.1;
-    pert = zeros(size(uc))
-    dpert = zeros(size(uc))
+  # if apply_pert
+  #   ran = 0.2*rand(1,10).-0.1;
+  #   pert = zeros(size(uc))
+  #   dpert = zeros(size(uc))
 
-    for n in 1:10
-        pert .+= ran[n]*cos.(n*uc*pi)
-        dpert .+= - ran[n]*n*pi*sin.(n*uc*pi)
-    end
-    rr = 0.2*sigeq/maximum(abs.(pert))
-    pert .= pert.*rr
-                    # This is to ensure that the maximum perturbation is no greater than 0.2*sigeq        
-    dpert .= dpert.*rr
+  #   for n in 1:10
+  #       pert .+= ran[n]*cos.(n*uc*pi)
+  #       dpert .+= - ran[n]*n*pi*sin.(n*uc*pi)
+  #   end
+  #   rr = 0.2*sigeq/maximum(abs.(pert))
+  #   pert .= pert.*rr
+  #                   # This is to ensure that the maximum perturbation is no greater than 0.2*sigeq        
+  #   dpert .= dpert.*rr
 
-    pert_fn = interpolate((uc,), pert, Gridded(Linear()))
-    dpert_fn = interpolate((uc,), dpert, Gridded(Linear()))
+  #   pert = sigeq .+ pert
 
-  else
-    pert = ones(size(uc))*sigeq
-    dpert = ones(size(uc))*0
+  #   pert_fn = interpolate((uc,), pert, Gridded(Linear()))
+  #   dpert_fn = interpolate((uc,), dpert, Gridded(Linear()))
+  #   @infiltrate
+  # else
+  #   pert = ones(size(uc))*sigeq
+  #   dpert = ones(size(uc))*0
 
-    pert_fn = interpolate((uc,), pert, Gridded(Linear()))
-    dpert_fn = interpolate((uc,), dpert, Gridded(Linear()))
+  #   pert_fn = interpolate((uc,), pert, Gridded(Linear()))
+  #   dpert_fn = interpolate((uc,), dpert, Gridded(Linear()))
 
-  end
+  # end
   
   g = [t*pi,
        pi,
