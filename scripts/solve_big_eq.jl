@@ -44,9 +44,11 @@ const la = 1;                        # Passive membrane tension
 #%%%%%%%% bvp5c parameters %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 RTol = 1e-3;              # relative tolerence 
 Nmax = 50000;             # maximum iteration steps
-dt = 0.001;                # simulation time step
+dt = 0.01;                # simulation time step
 T = 6;                    # total simulation time
 date = "15-Jan-2024";
+
+apply_pert = true
 
 function main()
 
@@ -92,13 +94,13 @@ dpert .= dpert.*rr
 guess_init[:,9] .= guess_init[:,9] .+ pert # Add peturbation to concentration
 guess_init[:,10] .= guess_init[:,10] .+ dpert # Add derivative perturbation to concentration derivative
 save_object("solve_big_eq_guess_init.jld2",guess_init)
-# @infiltrate
 uc0 = uc
 p0c = guess_init[:,1]
 r0c = guess_init[:,3]
 z0c = guess_init[:,4]
 h0c = guess_init[:,12]
 
+@infiltrate
 
 sig0c = guess_init[:,9]
 
@@ -125,6 +127,7 @@ params = Dict(:R0 => R0,
               :z0c => z0c,
               :h0c => h0c,
               :sig0c => sig0c,
+              :apply_pert => apply_pert,
               :dt => dt)
 
 params = NamedTuple(p for p in params)

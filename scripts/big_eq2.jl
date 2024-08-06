@@ -290,6 +290,23 @@ function guessf(u,ka,R0,ri,sigeq)
   return stack(g)
 end
 
+function generate_perturbation(t)
+  
+    ran = 0.2*rand(1,10).-0.1;
+    pert = zeros(size(uc))
+    dpert = zeros(size(uc))
+
+    for n in 1:10
+        pert .+= ran[n]*cos.(n*uc*pi)
+        dpert .+= - ran[n]*n*pi*sin.(n*uc*pi)
+    end
+    rr = 0.2*sigeq/maximum(abs.(pert))
+    pert .= pert.*rr
+                    # This is to ensure that the maximum perturbation is no greater than 0.2*sigeq        
+    dpert .= dpert.*rr
+end
+
+
 function initialGuess(p,t)
   # psi = y(1);
   # dpsi = y(2);
@@ -306,11 +323,40 @@ function initialGuess(p,t)
   # ka = 1;
   #ka = 1;
 
+  uc = p[:uc0]
   ka = p[:ka]
   R0 = p[:R0]
   ri = p[:ri]
   sigeq = p[:sigeq]
+  apply_pert = p[:apply_pert]  # bool
 
+
+  if apply_pert
+    ran = 0.2*rand(1,10).-0.1;
+    pert = zeros(size(uc))
+    dpert = zeros(size(uc))
+
+    for n in 1:10
+        pert .+= ran[n]*cos.(n*uc*pi)
+        dpert .+= - ran[n]*n*pi*sin.(n*uc*pi)
+    end
+    rr = 0.2*sigeq/maximum(abs.(pert))
+    pert .= pert.*rr
+                    # This is to ensure that the maximum perturbation is no greater than 0.2*sigeq        
+    dpert .= dpert.*rr
+
+    pert_fn = interpolate((uc,), pert, Gridded(Linear()))
+    dpert_fn = interpolate((uc,), dpert, Gridded(Linear()))
+
+  else
+    pert = ones(size(uc))*sigeq
+    dpert = ones(size(uc))*0
+
+    pert_fn = interpolate((uc,), pert, Gridded(Linear()))
+    dpert_fn = interpolate((uc,), dpert, Gridded(Linear()))
+
+  end
+  
   g = [t*pi,
        pi,
        ri.+ R0*sin.(t*pi),
@@ -319,10 +365,11 @@ function initialGuess(p,t)
        0.0,
        0.0,
        0.0,
-       sigeq,
-       0.0,
+       pert_fn(t),
+       dpert_fn(t),
        2/3*R0^3*(2 .+ cos.(t*pi)).*sin.(t*pi/2).^4,
        R0*pi]
+
   return stack(g)
 end
 
